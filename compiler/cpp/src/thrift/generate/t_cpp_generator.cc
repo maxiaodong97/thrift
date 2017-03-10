@@ -147,6 +147,7 @@ public:
   void generate_struct_reader(std::ofstream& out, t_struct* tstruct, bool pointers = false);
   void generate_struct_writer(std::ofstream& out, t_struct* tstruct, bool pointers = false);
   void generate_struct_result_writer(std::ofstream& out, t_struct* tstruct, bool pointers = false);
+  void generate_struct_field_tables  (std::ofstream& out, t_struct* tstruct, bool pointers=false);
   void generate_struct_swap(std::ofstream& out, t_struct* tstruct);
   void generate_struct_print_method(std::ofstream& out, t_struct* tstruct);
   void generate_exception_what_method(std::ofstream& out, t_struct* tstruct);
@@ -816,6 +817,7 @@ void t_cpp_generator::generate_cpp_struct(t_struct* tstruct, bool is_exception) 
   generate_struct_declaration(f_types_, tstruct, is_exception, false, true, true, true, true);
   generate_struct_definition(f_types_impl_, f_types_impl_, tstruct, true, true);
 
+  generate_struct_field_tables(f_types_impl_, tstruct);
   std::ofstream& out = (gen_templates_ ? f_types_tcc_ : f_types_impl_);
   generate_struct_reader(out, tstruct);
   generate_struct_writer(out, tstruct);
@@ -837,6 +839,61 @@ void t_cpp_generator::generate_cpp_struct(t_struct* tstruct, bool is_exception) 
     generate_exception_what_method(f_types_impl_, tstruct);
   }
 }
+
+/**
+ * Generate a struct field tables for simple json parser.
+ *  - fieldname to field id mapping
+ *  - fieldname to field type mapping.
+ * @param out, the output file stream
+ * @param tstruct the struct definition.
+ * @retval void
+ */
+void t_cpp_generator::generate_struct_field_tables  (std::ofstream& out, t_struct* tstruct, bool pointers) {
+    const vector<t_field*>& members = tstruct->get_members();
+    vector<t_field*>::const_iterator m_iter;
+    int16_t i = 1;
+
+    out<<endl<<"std::string _k"<<tstruct->get_name()<<"[] = {"<<endl;
+    out<<"  \"null\","<<endl;
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+        out<<"  \""<<(*m_iter)->get_name()<<"\","<<endl;
+    }
+    out<<"};"<<endl;
+
+    out<<endl<<"int _kftype_"<<tstruct->get_name()<<"[] = {"<<endl;
+    out<<"  ::apache::thrift::protocol::T_VOID,"<<endl;
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+        out<<"  "<<type_to_enum((*m_iter)->get_type())<<","<<endl;
+    }
+    out<<"};"<<endl;
+
+    out<<endl<<"int _kfid_"<<tstruct->get_name()<<"[] = {"<<endl;
+    out<<"  -1,"<<endl;
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter, i++) {
+        out<<"  "<<(*m_iter)->get_key()<<","<<endl;
+    }
+    out<<"};"<<endl;
+
+    out<<endl<<"const std::map<std::string, int> _"<<
+        tstruct->get_name()<<"_NAMES_TO_FID(::apache::thrift::TEnumIteratorReversed("<<
+        i<<", _kfid_"<<tstruct->get_name()<<", _k"<<tstruct->get_name()<<
+        "), ::apache::thrift::TEnumIteratorReversed(-1, NULL, NULL));"<<endl;
+
+    out<<endl<<"const std::map<std::string, int> _"<<
+        tstruct->get_name()<<"_NAMES_TO_FTYPE(::apache::thrift::TEnumIteratorReversed("<<
+        i<<", _kftype_"<<tstruct->get_name()<<", _k"<<tstruct->get_name()<<
+        "), ::apache::thrift::TEnumIteratorReversed(-1, NULL, NULL));"<<endl;
+
+    out<<endl<<"::apache::thrift::protocol::TType "<<tstruct->get_name()<<"::get_ftype_by_field_name(std::string fname) {"<<endl<<
+        "  return (::apache::thrift::protocol::TType)_"<<tstruct->get_name()<<
+        "_NAMES_TO_FTYPE.find(fname)->second;"<<endl;
+    out<<"}"<<endl;
+
+    out<<endl<<"int16_t "<<tstruct->get_name()<<"::get_fid_by_field_name(std::string fname) {"<<endl<<
+        "  return static_cast<int16_t> (_"<<tstruct->get_name()<<"_NAMES_TO_FID.find(fname)->second);"<<endl;
+    out<<"}"<<endl;
+}
+
 
 void t_cpp_generator::generate_copy_constructor(ofstream& out,
                                                 t_struct* tstruct,
@@ -1102,6 +1159,10 @@ void t_cpp_generator::generate_struct_declaration(ofstream& out,
     out << endl << indent() << "_" << tstruct->get_name() << "__isset __isset;" << endl;
   }
 
+  // Add fieldname lookup functions.
+  out<<endl<<indent()<<"::apache::thrift::protocol::TType get_ftype_by_field_name(std::string fname);"<<endl;
+  out<<endl<<indent()<<"int16_t get_fid_by_field_name(std::string fname);"<<endl;
+
   // Create a setter function for each field
   for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
     if (pointers) {
@@ -1305,9 +1366,17 @@ void t_cpp_generator::generate_struct_reader(ofstream& out, t_struct* tstruct, b
   out << indent() << "if (ftype == ::apache::thrift::protocol::T_STOP) {" << endl << indent()
       << "  break;" << endl << indent() << "}" << endl;
 
+
   if (fields.empty()) {
     out << indent() << "xfer += iprot->skip(ftype);" << endl;
   } else {
+    // Check if this is simple json
+    out <<
+        indent() << "if (fid == (int16_t)-1) {" << endl <<
+        indent() << "  fid = get_fid_by_field_name(fname);" << endl <<
+        indent() << "  ftype = get_ftype_by_field_name(fname);" << endl <<
+        indent() << "}" << endl;
+
     // Switch statement on the field we are reading
     indent(out) << "switch (fid)" << endl;
 
@@ -1827,6 +1896,7 @@ void t_cpp_generator::generate_service_helpers(t_service* tservice) {
     ts->set_name(tservice->get_name() + "_" + (*f_iter)->get_name() + "_args");
     generate_struct_declaration(f_header_, ts, false);
     generate_struct_definition(out, f_service_, ts, false);
+    generate_struct_field_tables(out, ts);
     generate_struct_reader(out, ts);
     generate_struct_writer(out, ts);
     ts->set_name(tservice->get_name() + "_" + (*f_iter)->get_name() + "_pargs");
@@ -3205,12 +3275,14 @@ void t_cpp_generator::generate_function_helpers(t_service* tservice, t_function*
 
   generate_struct_declaration(f_header_, &result, false);
   generate_struct_definition(out, f_service_, &result, false);
+  generate_struct_field_tables(out, &result);
   generate_struct_reader(out, &result);
   generate_struct_result_writer(out, &result);
 
   result.set_name(tservice->get_name() + "_" + tfunction->get_name() + "_presult");
   generate_struct_declaration(f_header_, &result, false, true, true, gen_cob_style_);
   generate_struct_definition(out, f_service_, &result, false);
+  generate_struct_field_tables(out, &result, true);
   generate_struct_reader(out, &result, true);
   if (gen_cob_style_) {
     generate_struct_writer(out, &result, true);
@@ -3828,12 +3900,15 @@ void t_cpp_generator::generate_deserialize_container(ofstream& out, t_type* ttyp
     out << indent() << "::apache::thrift::protocol::TType " << etype << ";" << endl << indent()
         << "xfer += iprot->readListBegin(" << etype << ", " << size << ");" << endl;
     if (!use_push) {
-      indent(out) << prefix << ".resize(" << size << ");" << endl;
+      indent(out) << prefix << ".resize(" << size << " == (uint32_t)-1 ? 1 : "<<size<<");" << endl;
     }
   }
 
   // For loop iterates over elements
   string i = tmp("_i");
+  out <<
+      indent() << "if ("<<size<<" != (uint32_t)-1) "<<endl;
+  scope_up(out);
   out << indent() << "uint32_t " << i << ";" << endl << indent() << "for (" << i << " = 0; " << i
       << " < " << size << "; ++" << i << ")" << endl;
 
@@ -3848,6 +3923,84 @@ void t_cpp_generator::generate_deserialize_container(ofstream& out, t_type* ttyp
   }
 
   scope_down(out);
+  scope_down(out);
+
+  if (ttype->is_list()) {
+      out<<
+          indent() << "else"<<endl;
+      scope_up(out);
+      out<<
+          indent() << size << "= 1;"<<endl <<
+          indent() << "uint32_t " << i << " = 0;" << endl <<
+          indent() << "do " <<endl;
+      scope_up(out);
+      out<<
+          indent() << prefix << ".resize("<<size<<");"<< endl <<
+          indent() << "try " <<endl;
+      scope_up(out);
+      generate_deserialize_list_element(out, (t_list*)ttype, prefix, use_push, i);
+      out<<
+          indent() << i << "++;"<<endl<<
+          indent() << size << "++;"<<endl;
+      scope_down(out);
+      out<<
+          indent() <<"catch(...) "<<endl;
+      scope_up(out);
+      out<<
+          indent() << prefix << ".resize("<<i<<");"<< endl<<
+          indent() << "break;"<<endl;
+      scope_down(out);
+      scope_down(out);
+      out<<
+          indent() << "while(true);" <<endl;
+      scope_down(out);
+  }
+  else if (ttype->is_set()) {
+      out<<
+          indent() << "else"<<endl;
+      scope_up(out);
+      out<<
+          indent() << "do " <<endl;
+      scope_up(out);
+      out<<
+          indent() << "try " <<endl;
+      scope_up(out);
+      generate_deserialize_set_element(out, (t_set*)ttype, prefix);
+      scope_down(out);
+      out<<
+          indent() <<"catch(...) "<<endl;
+      scope_up(out);
+      out<<
+          indent() << "break;"<<endl;
+      scope_down(out);
+      scope_down(out);
+      out<<
+          indent() << "while(true);" <<endl;
+      scope_down(out);
+  }
+  else if (ttype->is_map()) {
+      out<<
+          indent() << "else"<<endl;
+      scope_up(out);
+      out<<
+          indent() << "do " <<endl;
+      scope_up(out);
+      out<<
+          indent() << "try " <<endl;
+      scope_up(out);
+      generate_deserialize_map_element(out, (t_map*)ttype, prefix);
+      scope_down(out);
+      out<<
+          indent() <<"catch(...) "<<endl;
+      scope_up(out);
+      out<<
+          indent() << "break;"<<endl;
+      scope_down(out);
+      scope_down(out);
+      out<<
+          indent() << "while(true);" <<endl;
+      scope_down(out);
+  }
 
   // Read container end
   if (ttype->is_map()) {
