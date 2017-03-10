@@ -71,7 +71,11 @@ thrift_memory_buffer_read (ThriftTransport *transport, gpointer buf,
                            guint32 len, GError **error)
 {
   ThriftMemoryBuffer *t = THRIFT_MEMORY_BUFFER (transport);
-  guint32 give = len; 
+  guint32 give = len;
+  if (t->buf->len == 0) {
+    /* All consumed, invalid data */
+    return -1;
+  }
 
   THRIFT_UNUSED_VAR (error);
 
@@ -83,7 +87,9 @@ thrift_memory_buffer_read (ThriftTransport *transport, gpointer buf,
   }
 
   memcpy (buf, t->buf->data, give);
-  g_byte_array_remove_range (t->buf, 0, give);
+  if (NULL == g_byte_array_remove_range (t->buf, 0, give)) {
+    return -1;
+  }
 
   return give;
 }
@@ -102,7 +108,7 @@ thrift_memory_buffer_read_end (ThriftTransport *transport, GError **error)
 /* implements thrift_transport_write */
 gboolean
 thrift_memory_buffer_write (ThriftTransport *transport,
-                            const gpointer buf,     
+                            const gpointer buf,
                             const guint32 len, GError **error)
 {
   ThriftMemoryBuffer *t = THRIFT_MEMORY_BUFFER (transport);
