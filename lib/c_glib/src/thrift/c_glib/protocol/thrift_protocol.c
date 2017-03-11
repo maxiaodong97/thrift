@@ -469,20 +469,40 @@ thrift_protocol_skip (ThriftProtocol *protocol, ThriftType type, GError **error)
         gchar *name;
         gint16 fid;
         ThriftType ftype;
-        result += thrift_protocol_read_struct_begin (protocol, &name, error);
+        gint32 ret = thrift_protocol_read_struct_begin (protocol, &name, error);
+        if (ret < 0) {
+          return -1;
+        }
+        result += ret;
 
         while (1)
         {
-          result += thrift_protocol_read_field_begin (protocol, &name, &ftype,
+          gint32 ret = thrift_protocol_read_field_begin (protocol, &name, &ftype,
                                                       &fid, error);
+          if (ret < 0) {
+            return -1;
+          }
+          result += ret;
           if (ftype == T_STOP)
           {
             break;
           }
-          result += thrift_protocol_skip (protocol, ftype, error);
-          result += thrift_protocol_read_field_end (protocol, error);
+          ret = thrift_protocol_skip (protocol, ftype, error);
+          if (ret < 0) {
+            return -1;
+          }
+          result += ret;
+          ret = thrift_protocol_read_field_end (protocol, error);
+          if (ret < 0) {
+            return -1;
+          }
+          result += ret;
         }
-        result += thrift_protocol_read_struct_end (protocol, error);
+        ret = thrift_protocol_read_struct_end (protocol, error);
+        if (ret < 0) {
+          return -1;
+        }
+        result += ret;
         return result;
       }
     case T_SET:
@@ -490,13 +510,25 @@ thrift_protocol_skip (ThriftProtocol *protocol, ThriftType type, GError **error)
         guint32 result = 0;
         ThriftType elem_type;
         guint32 i, size;
-        result += thrift_protocol_read_set_begin (protocol, &elem_type, &size,
+        gint32 ret = thrift_protocol_read_set_begin (protocol, &elem_type, &size,
                                                   error);
+        if (ret < 0) {
+          return -1;
+        }
+        result += ret;
         for (i = 0; i < size; i++)
         {
-          result += thrift_protocol_skip (protocol, elem_type, error);
+          ret = thrift_protocol_skip (protocol, elem_type, error);
+          if (ret < 0) {
+            return -1;
+          }
+          result += ret;
         }
-        result += thrift_protocol_read_set_end (protocol, error);
+        ret = thrift_protocol_read_set_end (protocol, error);
+        if (ret < 0) {
+          return -1;
+        }
+        result += ret;
         return result;
       }
     case T_MAP:
