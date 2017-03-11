@@ -33,6 +33,12 @@
     <ClCompile Include="src\thrift\protocol\TJSONProtocol.cpp">
       <Filter>protocol</Filter>
     </ClCompile>
+    <ClCompile Include="src\thrift\protocol\TSimpleJSONProtocol.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="src\thrift\protocol\TPlistProtocol.cpp">
+      <Filter>protocol</Filter>
+    </ClCompile>
     <ClCompile Include="src\thrift\protocol\TMultiplexedProtocol.cpp">
       <Filter>protocol</Filter>
     </ClCompile>
@@ -204,6 +210,12 @@
       <Filter>transport</Filter>
     </ClInclude>
     <ClInclude Include="src\thrift\protocol\TJSONProtocol.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="src\thrift\protocol\TSimpleJSONProtocol.h">
+      <Filter>protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="src\thrift\protocol\TPlistProtocol.h">
       <Filter>protocol</Filter>
     </ClInclude>
     <ClInclude Include="src\thrift\protocol\TMultiplexedProtocol.h">

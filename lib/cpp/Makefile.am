@@ -78,6 +78,7 @@ libthrift_la_SOURCES = src/thrift/TApplicationException.cpp \
                        src/thrift/protocol/TDebugProtocol.cpp \
                        src/thrift/protocol/TJSONProtocol.cpp \
                        src/thrift/protocol/TSimpleJSONProtocol.cpp \
+                       src/thrift/protocol/TPlistProtocol.cpp \
                        src/thrift/protocol/TBase64Utils.cpp \
                        src/thrift/protocol/TMultiplexedProtocol.cpp \
                        src/thrift/protocol/TProtocol.cpp \
@@ -196,6 +197,7 @@ include_protocol_HEADERS = \
                          src/thrift/protocol/TBase64Utils.h \
                          src/thrift/protocol/TJSONProtocol.h \
                          src/thrift/protocol/TSimpleJSONProtocol.h \
+                         src/thrift/protocol/TPlistProtocol.h \
                          src/thrift/protocol/TMultiplexedProtocol.h \
                          src/thrift/protocol/TProtocolDecorator.h \
                          src/thrift/protocol/TProtocolTap.h \
