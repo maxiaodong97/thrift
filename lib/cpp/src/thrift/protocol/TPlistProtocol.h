@@ -358,7 +358,7 @@ class TPlistProtocolFactory : public TProtocolFactory {
 
 
 // TODO(dreiss): Move part of ThriftPlistString into a .cpp file and remove this.
-#include <transport/TBufferTransports.h>
+#include <thrift/transport/TBufferTransports.h>
 
 namespace apache { namespace thrift {
 

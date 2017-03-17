@@ -27,7 +27,6 @@ int testSimpleJSONWrite(int argc, char **argv)
     example->__isset.commonField2 = true;
     example->__set_commonField3("hello,world");
     example->__set_commonField4(true);
-    example->commonField5.__set_isSubcollection(false);
     example->__set_commonField6(1.732);
     example->__set_commonField7(1732);
     example->write(oprotocol.get());
@@ -58,8 +57,6 @@ int testSimpleJSONRead(int argc, char **argv)
     cout<<example->commonField2[1]<<endl;
     cout<<example->commonField3<<endl;
     cout<<example->commonField4<<endl;
-    cout<<example->commonField5.link<<endl;
-    cout<<example->commonField5.isSubcollection<<endl;
     cout<<example->commonField6<<endl;
     cout<<example->commonField7<<endl;
     return 0;
@@ -77,7 +74,6 @@ void testPlistWrite(int argc, char **argv)
     example->__isset.commonField2 = true;
     example->__set_commonField3("hello,world");
     example->__set_commonField4(true);
-    example->commonField5.__set_isSubcollection(false);
     example->__set_commonField6(1.732);
     example->__set_commonField7(1732);
     example->__set_common_field8(32);
@@ -106,13 +102,6 @@ void testPlistRead(int argc, char **argv)
         "  <data>aGVsbG8sd29ybGQ</data>                \n"
         "  <key>commonField4</key>                     \n"
         "  <true/>                                     \n"
-        "  <key>commonField5</key>                     \n"
-        "  <dict>                                      \n"
-        "      <key>link</key>                         \n"
-        "      <string>https://blahblah...</string>    \n"
-        "      <key>isSubcollection</key>              \n"
-        "      <false/>                                \n"
-        "  </dict>                                     \n"
         "  <key>commonField6</key>                     \n"
         "  <real>1.732</real>                          \n"
         "  <key>commonField7</key>                     \n"

@@ -76,6 +76,30 @@ private:
   const char** names_;
 };
 
+class TEnumIteratorReversed
+    : public std::iterator<std::forward_iterator_tag, std::pair<std::string, int> > {
+public:
+  TEnumIteratorReversed(int n, int* enums, std::string* names)
+      : ii_(0), n_(n), enums_(enums), names_(names) {}
+
+  int operator ++() { return ++ii_; }
+
+  bool operator !=(const TEnumIteratorReversed& end) {
+    assert(end.n_ == -1);
+    return (ii_ != n_);
+  }
+
+  std::pair<std::string, int> operator*() const {
+    return std::make_pair(names_[ii_], enums_[ii_]);
+  }
+
+private:
+  int ii_;
+  const int n_;
+  int* enums_;
+  std::string * names_;
+};
+
 class TException : public std::exception {
 public:
   TException() : message_() {}
