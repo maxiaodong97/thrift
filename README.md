@@ -1,164 +1,84 @@
 Apache Thrift
 =============
 
-Last Modified: 2014-03-16
+This fork includes following fixes and enhancement for CPP and C
 
-License
-=======
+1. Support TSimpleJSONProtocol
+SimpleJSON is more commonly used by outside of Apache Thrift.
+Java already have this support, here I added for CPP.
 
-Licensed to the Apache Software Foundation (ASF) under one
-or more contributor license agreements. See the NOTICE file
-distributed with this work for additional information
-regarding copyright ownership. The ASF licenses this file
-to you under the Apache License, Version 2.0 (the
-"License"); you may not use this file except in compliance
-with the License. You may obtain a copy of the License at
+2. TPlistProtocol
+Plist is Apple's configuration file format, eg: .mobileconfig.
+This feature can be useful for MDM vendors to generate profiles for iOS, MacOS, etc.
 
-  http://www.apache.org/licenses/LICENSE-2.0
+3. Fix issue where c glib binary protocol may goes to infinite loop in data fuzzy testing.
 
-Unless required by applicable law or agreed to in writing,
-software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, either express or implied. See the License for the
-specific language governing permissions and limitations
-under the License.
 
-Introduction
+Examples
 ============
 
-Thrift is a lightweight, language-independent software stack with an
-associated code generation mechanism for RPC. Thrift provides clean
-abstractions for data transport, data serialization, and application
-level processing. The code generation system takes a simple definition
-language as its input and generates code across programming languages that
-uses the abstracted stack to build interoperable RPC clients and servers.
+1. Follow build instruction in README.md.orig
+2. Build exampe/
+   cd example
+   make
+3. Run example
+   ./example.exe
 
-Thrift is specifically designed to support non-atomic version changes
-across client and server code.
+Here is example output:
 
-For more details on Thrift's design and implementation, take a gander at
-the Thrift whitepaper included in this distribution or at the README.md files
-in your particular subdirectory of interest.
+----- TestSimpleJSONWrite() -----
+{"commonField1":"Field1-value","commonField2":["Field2-value1","Field2-value2"],"commonField3":"aGVsbG8sd29ybGQ","commonField4":true,"commonField6":1.732,"commonField7":1732}
+----- TestSimpleJSONRead() -----
+{
+        "commonField1":"Field1",
+        "commonField2":["Field2-value1","Field2-value2"],
+        "commonField3":"aGVsbG8sd29ybGQ",
+        "commonField4":true,
+        "commonField6":1.732,
+        "commonField7":1732
+}
 
-Hierarchy
-=========
+Field1
+Field2-value1
+Field2-value2
+hello,world
+1
+1.732
+1732
+----- TestPlistWrite() -----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict><key>commonField1</key> <string>Field1-&quot;&apos;&lt;&gt;&amp;</string> <key>commonField2</key> <array><string>Field2-value1</string> <string>Field2-value2</string></array> <key>commonField3</key> <data>aGVsbG8sd29ybGQ</data> <key>commonField4</key> <true/> <key>commonField6</key> <real>1.732</real> <key>commonField7</key> <integer>1732</integer> <key>common-field8</key> <integer>32</integer> </dict></plist>
+----- TestPlistRead() -----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+<key>commonField1</key>
+<string>Field1-&quot;&apos;&lt;&gt;&amp;</string>
+<key>commonField2</key>
+<array>
+<string>Field2-value1</string>
+<string>Field2-value2</string>
+</array>
+<key>commonField3</key>
+<data>aGVsbG8sd29ybGQ</data>
+<key>commonField4</key>
+<true/>
+<key>commonField6</key>
+<real>1.732</real>
+<key>commonField7</key>
+<integer>1732</integer>
+<key>common-field8</key>
+<integer>32</integer>
+</dict>
+</plist>
 
-thrift/
-
-  compiler/
-
-    Contains the Thrift compiler, implemented in C++.
-
-  lib/
-
-    Contains the Thrift software library implementation, subdivided by
-    language of implementation.
-
-    cpp/
-    go/
-    java/
-    php/
-    py/
-    rb/
-
-  test/
-
-    Contains sample Thrift files and test code across the target programming
-    languages.
-
-  tutorial/
-
-    Contains a basic tutorial that will teach you how to develop software
-    using Thrift.
-
-Requirements
-============
-
-See http://thrift.apache.org/docs/install for an up-to-date list of build requirements.
-
-Resources
-=========
-
-More information about Thrift can be obtained on the Thrift webpage at:
-
-     http://thrift.apache.org
-
-Acknowledgments
-===============
-
-Thrift was inspired by pillar, a lightweight RPC tool written by Adam D'Angelo,
-and also by Google's protocol buffers.
-
-Installation
-============
-
-If you are building from the first time out of the source repository, you will
-need to generate the configure scripts.  (This is not necessary if you
-downloaded a tarball.)  From the top directory, do:
-
-    ./bootstrap.sh
-
-Once the configure scripts are generated, thrift can be configured.
-From the top directory, do:
-
-    ./configure
-
-You may need to specify the location of the boost files explicitly.
-If you installed boost in /usr/local, you would run configure as follows:
-
-    ./configure --with-boost=/usr/local
-
-Note that by default the thrift C++ library is typically built with debugging
-symbols included. If you want to customize these options you should use the
-CXXFLAGS option in configure, as such:
-
-    ./configure CXXFLAGS='-g -O2'
-    ./configure CFLAGS='-g -O2'
-    ./configure CPPFLAGS='-DDEBUG_MY_FEATURE'
-
-To enable gcov required options -fprofile-arcs -ftest-coverage enable them:
-
-    ./configure  --enable-coverage
-
-Run ./configure --help to see other configuration options
-
-Please be aware that the Python library will ignore the --prefix option
-and just install wherever Python's distutils puts it (usually along
-the lines of /usr/lib/pythonX.Y/site-packages/).  If you need to control
-where the Python modules are installed, set the PY_PREFIX variable.
-(DESTDIR is respected for Python and C++.)
-
-Make thrift:
-
-	make
-
-From the top directory, become superuser and do:
-
-	make install
-
-Note that some language packages must be installed manually using build tools
-better suited to those languages (at the time of this writing, this applies
-to Java, Ruby, PHP).
-
-Look for the README.md file in the lib/<language>/ folder for more details on the
-installation of each language library package.
-
-Testing
-=======
-
-There are a large number of client library tests that can all be run
-from the top-level directory.
-
-          make -k check
-
-This will make all of the libraries (as necessary), and run through
-the unit tests defined in each of the client libraries. If a single
-language fails, the make check will continue on and provide a synopsis
-at the end.
-
-To run the cross-language test suite, please run:
-
-          make cross
-
-This will run a set of tests that use different language clients and
-servers.
+Field1-"'<>&
+Field2-value1
+Field2-value2
+hello,world
+1
+1.732
+1732
+32
