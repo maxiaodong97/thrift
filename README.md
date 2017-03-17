@@ -1,5 +1,5 @@
-Apache Thrift
-=============
+Cpp TSimpleJSONProtocl and TPlistProtocol Support for Apache Thrift
+===============================================================
 
 This fork includes following fixes and enhancement for CPP and C
 
@@ -25,7 +25,7 @@ Examples
    ./example.exe
 
 Here is example output:
-
+```
 ----- TestSimpleJSONWrite() -----
 {"commonField1":"Field1-value","commonField2":["Field2-value1","Field2-value2"],"commonField3":"aGVsbG8sd29ybGQ","commonField4":true,"commonField6":1.732,"commonField7":1732}
 ----- TestSimpleJSONRead() -----
@@ -82,3 +82,4 @@ hello,world
 1.732
 1732
 32
+```
